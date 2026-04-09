@@ -2,6 +2,8 @@
 
 A production-ready Retrieval-Augmented Generation (RAG) system that ingests documents, stores them in a vector database, and answers questions with cited sources.
 
+| [rag-agent](https://github.com/HansStewart/rag-agent) | Document Q&A with FAISS vector search | [Live](https://rag-agent-559169459241.us-east1.run.app) |
+
 ## 🌐 Live API
 https://rag-agent-559169459241-us-east1.run.app 
 
