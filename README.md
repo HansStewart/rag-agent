@@ -1,224 +1,116 @@
-# 📄 RAG Document Intelligence Agent
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-     
+  RAG DOCUMENT INTELLIGENCE
+  Source documents indexed with embeddings. Questions answered by
+  GPT-4o — grounded entirely in your content.
+  by Hans Stewart · hansstewart.dev
 
-A Retrieval-Augmented Generation (RAG) agent that ingests text documents into a FAISS vector index, performs semantic similarity search, and answers questions strictly from document context with cited sources. Includes a two-pass multi-step analysis mode that extracts themes and generates structured executive reports.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**Live API:** `https://rag-agent-559169459241.us-east1.run.app`
+  Architecture    →   hansstewart.github.io/ai-architecture
+  Portfolio       →   hansstewart.dev
+  GitHub          →   github.com/HansStewart/rag-agent
 
-***
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT IT DOES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## Architecture
+  A document question-answering system that indexes source content with
+  OpenAI embeddings, retrieves relevant context with FAISS, and generates
+  grounded answers with GPT-4o.
 
-```
-Document Upload (.txt)
-        │
-        ▼
-┌─────────────────────────────────┐
-│       Text Chunker              │
-│  splits doc into passages       │
-└─────────────┬───────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│    OpenAI Embeddings            │
-│  text-embedding-ada-002         │
-│  each chunk → vector            │
-└─────────────┬───────────────────┘
-              │
-              ▼
-┌─────────────────────────────────┐
-│       FAISS Vector Index        │
-│  in-memory · cosine similarity  │
-└──────────────────────────────────┘
+  Documents are split into semantic chunks, embedded, and stored in a
+  FAISS index. When a question arrives, the query is embedded and
+  matched against the index to retrieve the most relevant chunks. Those
+  chunks are injected into the GPT-4o prompt as context — the model
+  generates a response constrained by the indexed source material, not
+  its training data.
 
-           Q&A Mode                    Analysis Mode
-               │                            │
-               ▼                            ▼
-    retrieve Top-5 chunks         retrieve Top-8 chunks
-               │                            │
-               ▼                         Pass 1:
-    GPT-4o: answer from              extract 3-5 themes
-    context only + [Source X]            │
-    citations                         Pass 2:
-               │                   GPT-4o: full structured
-               ▼                   report using themes +
-         JSON response              original context
-                                         │
-                                         ▼
-                                   5-section report
-```
+  Retrieval pattern: chunking and embeddings separate knowledge storage
+  from answer generation. Grounding: retrieved evidence constrains
+  response quality and reduces hallucination risk. Use cases: internal
+  knowledge systems and private-document Q&A workflows.
 
-***
 
-## Tech Stack
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BACKEND WORKFLOW — 4 STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-| Layer | Technology |
-|---|---|
-| Runtime | Python 3.11 |
-| Web Framework | Flask 3.0 + Gunicorn |
-| Vector Store | FAISS (in-memory) |
-| Embeddings | OpenAI text-embedding-ada-002 |
-| AI / LLM | OpenAI GPT-4o |
-| Containerization | Docker (python:3.11-slim) |
-| Cloud | Google Cloud Run — us-east1 |
+  Step 01 — Document ingestion
+    Accepts document content or uploaded source material.
+    Splits the material into manageable semantic chunks.
+    Builds the indexing-ready input set for embedding generation.
+    → Input: Documents + source text
 
-***
+  Step 02 — Vector indexing
+    Generates OpenAI embeddings for each chunk of the source set.
+    Stores the vectors in a FAISS index for fast semantic retrieval.
+    Preserves document-to-chunk mapping for grounded answer generation.
+    → Intermediate: FAISS index + chunk map
 
-## API Reference
+  Step 03 — Retrieval layer
+    Embeds the incoming query using the same embedding model.
+    Searches the FAISS index for nearest semantic matches.
+    Packages high-relevance chunks into the prompt context for the model.
+    → Processing: Query → retrieval context
 
-### `POST /upload`
-Ingest a document into the FAISS vector index.
+  Step 04 — Answer generation
+    Injects retrieved chunks into the GPT-4o prompt as context.
+    Generates a response constrained by the indexed source material.
+    Returns a context-grounded answer through the API layer.
+    → Output: Grounded document answer
 
-**Request:** `multipart/form-data`
-```
-file: document.txt
-```
 
-**Response:**
-```json
-{
-  "message": "Document uploaded and indexed successfully",
-  "chunks_created": 24
-}
-```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-***
+  Language        Python 3.11
+  Framework       Flask
+  Server          Gunicorn
+  Vector Store    FAISS (local index)
+  Embeddings      OpenAI Embeddings API
+  AI Model        OpenAI GPT-4o (answer generation)
+  Deployment      Google Cloud Run — us-east1
 
-### `POST /ask`
-Ask a question — answered strictly from indexed document context with source citations.
 
-**Request:**
-```json
-{ "question": "What are the main findings?" }
-```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LOCAL DEVELOPMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**Response:**
-```json
-{
-  "answer": "The main findings include... [Source 1] [Source 3]",
-  "sources": ["chunk_1", "chunk_3"],
-  "chunks_used": 5
-}
-```
+  git clone https://github.com/HansStewart/rag-agent.git
+  cd rag-agent
+  pip install -r requirements.txt
+  cp .env.example .env
+  → Add OPENAI_API_KEY to .env
+  python main.py
+  → Open http://localhost:8080
 
-***
 
-### `POST /analyze`
-Two-pass deep analysis on a topic using the indexed documents.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**Request:**
-```json
-{ "topic": "market expansion strategy" }
-```
+  rag-agent/
+  ├── main.py
+  ├── app/
+  │   ├── __init__.py
+  │   ├── routes.py              /ingest and /query endpoints
+  │   ├── ingestor.py            Document splitting and embedding
+  │   ├── retriever.py           FAISS query and chunk retrieval
+  │   └── generator.py           GPT-4o grounded answer generation
+  ├── index.html
+  ├── requirements.txt
+  ├── Procfile
+  └── .env.example               OPENAI_API_KEY=
 
-**Response:**
-```json
-{
-  "topic": "market expansion strategy",
-  "themes": ["Theme 1", "Theme 2", "Theme 3"],
-  "report": {
-    "executive_summary": "...",
-    "key_findings": "...",
-    "detailed_analysis": "...",
-    "recommendations": "...",
-    "conclusion": "..."
-  },
-  "sources": ["chunk_2", "chunk_5", "chunk_8"],
-  "chunks_analyzed": 8
-}
-```
 
-***
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENVIRONMENT VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## How It Works
+  OPENAI_API_KEY       required    Embeddings generation + GPT-4o answers
 
-### Q&A Mode (`/ask`)
-1. User submits a question
-2. Question is embedded via OpenAI `text-embedding-ada-002`
-3. FAISS performs cosine similarity search → returns Top-5 most relevant chunks
-4. Chunks are formatted as `[Source 1]...[Source 5]` context string
-5. GPT-4o is instructed to answer **only from the provided context** — no hallucination
-6. Response includes the answer and which source chunks were used
-
-### Multi-Step Analysis Mode (`/analyze`)
-**Pass 1 — Theme Extraction:**
-- Top-8 chunks retrieved from FAISS
-- GPT-4o extracts 3–5 key themes from the document corpus
-
-**Pass 2 — Structured Report:**
-- Themes + original chunks sent to GPT-4o together
-- GPT-4o generates a full report: Executive Summary → Key Findings → Detailed Analysis → Recommendations → Conclusion
-
-***
-
-## Local Setup
-
-```bash
-git clone https://github.com/HansStewart/rag-agent.git
-cd rag-agent
-pip install -r requirements.txt
-```
-
-Create a `.env` file:
-```
-OPENAI_API_KEY=your_key_here
-```
-
-Run the server:
-```bash
-python main.py
-```
-
-Test with the sample document:
-```bash
-# Upload
-curl -X POST http://localhost:5000/upload \
-  -F "file=@sample.txt"
-
-# Ask
-curl -X POST http://localhost:5000/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is the main topic?"}'
-```
-
-***
-
-## Project Structure
-
-```
-rag-agent/
-├── app/
-│   ├── rag_agent.py      # Q&A + multi-step analysis logic
-│   ├── vector_store.py   # FAISS indexing + semantic search
-│   └── routes.py         # Flask endpoints
-├── main.py               # App entry point
-├── sample.txt            # Sample document for testing
-├── Dockerfile
-└── requirements.txt
-```
-
-***
-
-## Deployment
-
-```bash
-gcloud run deploy rag-agent \
-  --source . \
-  --platform managed \
-  --region us-east1 \
-  --allow-unauthenticated
-```
-
-***
-
-## Part of the AI Agent Portfolio
-
-| Agent | Description | Live URL |
-|---|---|---|
-| AI Data Agent | CSV analysis + GPT-4o insights | [↗](https://ai-data-agent-559169459241.us-east1.run.app) |
-| **RAG Document Intelligence** | FAISS vector search + cited Q&A | [↗](https://rag-agent-559169459241.us-east1.run.app) |
-| CRM Automation Agent | HubSpot + lead scoring + email gen | [↗](https://crm-agent-559169459241.us-east1.run.app) |
-| Multi-Agent BI System | CrewAI 4-agent pipeline | [↗](https://multi-agent-559169459241.us-east1.run.app) |
-
-**Author:** [Hans Stewart](https://github.com/HansStewart)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Hans Stewart · Marketing Automation Engineer · hansstewart.dev
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
